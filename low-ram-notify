@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# RAM Checker for KDE Autostart (Persistent Loop)
+# Logs to ~/.ram_checker.log
+# Notifies only when RAM is critically low (<468MB) every 90 seconds
+# No repeated alarms - single notification per cycle
+
+LOG_FILE="$HOME/.ram_checker.log"
+THRESHOLD=468  # MB
+CHECK_INTERVAL=90  # seconds
+ALARM_PATTERN="\a\a\a"  # 3 quick beeps
+
+# Logging function
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
+}
+
+# Notification function
+notify() {
+    notify-send -u critical -t 5000 "RAM Warning" "Only ${1}MB RAM free! Please close applications."
+}
+
+# Main loop
+log "RAM Checker started"
+while true; do
+    # Get available RAM in MB (MemAvailable)
+    FREE_RAM=$(free -m | awk '/Mem:/ {print $7}')
+
+    if [ "$FREE_RAM" -lt "$THRESHOLD" ]; then
+        log "Critical RAM state: ${FREE_RAM}MB free"
+
+        # Single notification
+        notify "$FREE_RAM"
+
+        # Single alarm (3 beeps)
+        echo -e "$ALARM_PATTERN" > /dev/console
+    fi
+
+    sleep "$CHECK_INTERVAL"
+done
